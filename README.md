@@ -13,6 +13,16 @@ pnpm dev
 # or
 bun dev
 ```
+.env
+```
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
+DB_HOST=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+```
+
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
