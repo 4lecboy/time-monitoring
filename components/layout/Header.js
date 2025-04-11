@@ -11,9 +11,9 @@ export default function Header() {
   // Update time every second with the CURRENT date (not 2025)
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date(); // Get the current date/time
+      const now = new Date();
       
-      // Format it as YYYY-MM-DD HH:MM:SS manually to avoid any library issues
+      // Manual formatting to avoid any library issues
       const year = now.getUTCFullYear();
       const month = String(now.getUTCMonth() + 1).padStart(2, '0');
       const day = String(now.getUTCDate()).padStart(2, '0');
@@ -21,8 +21,7 @@ export default function Header() {
       const minutes = String(now.getUTCMinutes()).padStart(2, '0');
       const seconds = String(now.getUTCSeconds()).padStart(2, '0');
       
-      const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-      setCurrentTime(formatted);
+      setCurrentTime(`${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
     };
     
     updateTime(); // Initial call
@@ -42,6 +41,7 @@ export default function Header() {
           {/* Date and Time Display */}
           <div className="text-sm text-gray-600 border-r pr-6">
             <div className="font-semibold">Current Date and Time</div>
+            <div>(UTC - YYYY-MM-DD HH:MM:SS formatted)</div>
             <div className="font-mono">{currentTime}</div>
           </div>
           
