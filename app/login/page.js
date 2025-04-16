@@ -10,37 +10,32 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState(null);
-  
+
   const router = useRouter();
-  
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Debug info:', debugInfo);
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     setDebugInfo(null);
-    
+
     try {
       console.log('Signing in with:', { employeeId, password: '***' });
-      
+
       const result = await signIn('credentials', {
         redirect: false,
         employeeId,
         password,
       });
-      
+
       console.log('Sign-in result:', result);
-      
+
       if (result?.error) {
         setError(`Authentication failed: ${result.error}`);
-        
-        // Try to get debug info
-        try {
-          const testResponse = await fetch('/api/test-user');
-          const testData = await testResponse.json();
-          setDebugInfo(testData);
-        } catch (dbError) {
-          console.error('Failed to get debug info:', dbError);
-        }
       } else {
         // Redirect to dashboard on successful login
         router.push('/dashboard');
@@ -52,7 +47,7 @@ export default function Login() {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-lg shadow-md">
@@ -64,14 +59,18 @@ export default function Login() {
             Please sign in with your employee ID
           </p>
         </div>
-        
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div
+              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
+              role="alert"
+              aria-live="assertive"
+            >
               {error}
             </div>
           )}
-          
+
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="employeeId" className="sr-only">
@@ -85,7 +84,7 @@ export default function Login() {
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Employee ID (Ashima ID)"
+                placeholder="Employee ID"
               />
             </div>
             <div>
@@ -104,7 +103,7 @@ export default function Login() {
               />
             </div>
           </div>
-          
+
           <div>
             <button
               type="submit"
@@ -117,16 +116,16 @@ export default function Login() {
             </button>
           </div>
         </form>
-        
-        {/* Debug section - only visible when there's an error */}
+
+        {/* Debug section - only visible when there's debug info */}
         {debugInfo && (
           <div className="mt-4 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-40">
             <h3 className="font-bold">Debug Info:</h3>
-            <p>DB Connection: {debugInfo.message}</p>
-            <p>Users in DB: {debugInfo.count}</p>
+            <p>DB Connection: {debugInfo.message || 'N/A'}</p>
+            <p>Users in DB: {debugInfo.count || 0}</p>
             {debugInfo.users && (
               <ul className="mt-2 list-disc pl-5">
-                {debugInfo.users.map(user => (
+                {debugInfo.users.map((user) => (
                   <li key={user.id}>
                     {user.name} ({user.employee_id}) - {user.role}
                   </li>
@@ -135,11 +134,9 @@ export default function Login() {
             )}
           </div>
         )}
-        
+
         <div className="mt-4 text-center text-sm text-gray-600">
-          <p>Default admin credentials:</p>
-          <p>Employee ID: ADMIN001</p>
-          <p>Password: admin123</p>
+          <p>Contact your administrator for login credentials.</p>
         </div>
       </div>
     </div>

@@ -6,7 +6,6 @@ import Link from 'next/link';
 export default function TimerStats() {
   const [todayStats, setTodayStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   // Format seconds as HH:MM:SS
   const formatTime = (seconds) => {
@@ -21,22 +20,15 @@ export default function TimerStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        
-        const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
         const response = await fetch(`/api/timers/stats?date=${today}`);
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error ${response.status}: ${errorText}`);
-        }
+        if (!response.ok) throw new Error('Failed to fetch timer stats');
         
         const data = await response.json();
         setTodayStats(data);
       } catch (error) {
         console.error('Error fetching timer stats:', error);
-        setError(error.message);
       } finally {
         setLoading(false);
       }
@@ -47,39 +39,8 @@ export default function TimerStats() {
 
   if (loading) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Today's Activity</h3>
-        </div>
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Today's Activity</h3>
-          <Link 
-            href="/timer"
-            className="text-blue-600 hover:text-blue-800 text-sm"
-          >
-            Go to Timer →
-          </Link>
-        </div>
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700">
-          <p className="font-bold">Error loading timer stats</p>
-          <p className="text-sm">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-2 text-sm underline"
-          >
-            Retry
-          </button>
-        </div>
+      <div className="bg-white shadow rounded-lg p-6 flex items-center justify-center h-40">
+        <p className="text-gray-500">Loading timer stats...</p>
       </div>
     );
   }
@@ -87,7 +48,7 @@ export default function TimerStats() {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">Today's Activity</h3>
+        <h3 className="text-lg font-bold">Today`&apos;`s Activity</h3>
         <Link 
           href="/timer"
           className="text-blue-600 hover:text-blue-800 text-sm"

@@ -66,12 +66,12 @@ export default function Header() {
                 >
                   Profile
                 </Link>
-                <a 
+                <Link 
                   href="/api/auth/signout" 
                   className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 text-center"
                 >
                   Sign out
-                </a>
+                </Link>
               </div>
             </div>
           )}

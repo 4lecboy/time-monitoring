@@ -1,111 +1,128 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
+import { useActiveTimers, useSocketIO } from '@/lib/socketio';
 import Link from 'next/link';
-import SessionDebug from '@/components/debug/SessionDebug';
 
-export default function TimerStats() {
-  const [todayStats, setTodayStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  // Format seconds as HH:MM:SS
+export default function Dashboard() {
+  const { data: session } = useSession();
+  const { socket, isConnected } = useSocketIO(session?.user?.id);
+  const { activeTimers, loading } = useActiveTimers();
+  const [userActivity, setUserActivity] = useState(null);
+
+  // Format time as HH:MM:SS
   const formatTime = (seconds) => {
-    if (typeof seconds !== 'number') return '00:00:00';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    if (!seconds) return '00:00:00';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
-  
-  // Fetch today's stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const response = await fetch(`/api/timers/stats?date=${today}`);
-        
-        if (!response.ok) throw new Error('Failed to fetch timer stats');
-        
-        const data = await response.json();
-        setTodayStats(data);
-      } catch (error) {
-        console.error('Error fetching timer stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchStats();
-  }, []);
 
-  if (loading) {
-    return (
-      <div className="bg-white shadow rounded-lg p-6 flex items-center justify-center h-40">
-        <p className="text-gray-500">Loading timer stats...</p>
-      </div>
-    );
-  }
+  // Check if current user has an active timer
+  useEffect(() => {
+    if (session?.user?.id && activeTimers.length > 0) {
+      const userTimer = activeTimers.find(timer => timer.userId === session.user.id);
+      setUserActivity(userTimer || null);
+    } else {
+      setUserActivity(null);
+    }
+  }, [session?.user?.id, activeTimers]);
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold">Today's Activity</h3>
-        <Link 
-          href="/timer"
-          className="text-blue-600 hover:text-blue-800 text-sm"
-        >
-          Go to Timer →
-        </Link>
+    <div className="space-y-6">
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center">
+
+          <div className="flex items-center">
+            <span className={`h-3 w-3 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            <span className="text-sm text-gray-500">
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+        </div>
       </div>
       
-      {todayStats?.totalSeconds > 0 ? (
-        <div className="space-y-4">
-          <div className="flex justify-between">
-            <div>
-              <div className="text-sm text-gray-500">Work Time</div>
-              <div className="text-xl font-mono">{formatTime(todayStats.workSeconds)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Auxiliary Time</div>
-              <div className="text-xl font-mono">{formatTime(todayStats.auxSeconds)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Total Time</div>
-              <div className="text-xl font-mono">{formatTime(todayStats.totalSeconds)}</div>
-            </div>
+      {/* All Active Users (Admin/PDD only) */}
+      {['admin', 'pdd'].includes(session?.user?.role) && (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="p-6 bg-indigo-50 border-b border-indigo-100">
+            <h3 className="text-xl font-bold text-indigo-800">Real-Time Activity Monitor</h3>
+            <p className="text-indigo-600 text-sm mt-1">
+              All currently active users
+            </p>
           </div>
           
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-600" 
-              style={{ width: `${todayStats.workPercent}%` }}
-            ></div>
+          <div className="p-6">
+            {loading ? (
+              <div className="flex justify-center p-6">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+              </div>
+            ) : activeTimers.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Employee
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Campaign
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Activity
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Time
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {activeTimers.map((timer) => (
+                      <tr key={timer.timerId}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{timer.userName}</div>
+                              <div className="text-sm text-gray-500">{timer.employeeId}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{timer.campaign}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{timer.activityName}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            timer.activityType === 'work' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {timer.activityType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                          {formatTime(timer.seconds)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-500">
+                No active timers currently
+              </div>
+            )}
           </div>
-          
-          <div className="text-sm text-gray-500 flex justify-between">
-            <div>Work: {todayStats.workPercent}%</div>
-            <div>Aux: {todayStats.auxPercent}%</div>
-          </div>
-          
-          {todayStats.currentActivity && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-              <span className="text-xs font-medium text-gray-500">CURRENT ACTIVITY:</span>
-              <span className="ml-2 font-medium text-blue-700">{todayStats.currentActivity}</span>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No activity recorded today</p>
-          <Link 
-            href="/timer"
-            className="mt-2 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-          >
-            Start Tracking Time
-          </Link>
         </div>
       )}
-      {process.env.NODE_ENV === 'development' && <SessionDebug />}
     </div>
   );
 }

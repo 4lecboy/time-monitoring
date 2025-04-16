@@ -13,10 +13,13 @@ export const authOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.employeeId || !credentials?.password) {
+          console.log("Missing credentials");
           return null;
         }
         
         try {
+          console.log(`Authenticating user with employee ID: ${credentials.employeeId}`);
+          
           // Find user by employee ID
           const users = await query(
             'SELECT * FROM users WHERE employee_id = ?',
@@ -24,30 +27,33 @@ export const authOptions = {
           );
           
           if (users.length === 0) {
+            console.log("No user found with that employee ID");
             return null;
           }
           
           const user = users[0];
           
-          // Compare passwords - support both plain text and hashed passwords
+          // Use bcrypt to verify the password
           let isPasswordValid = false;
           
-          if (user.password_hash.startsWith('$2')) {
-            // This looks like a bcrypt hash
-            isPasswordValid = await bcrypt.compare(
-              credentials.password, 
-              user.password_hash
-            );
-          } else {
-            // Fallback to direct comparison (only for development)
+          // First try to verify with bcrypt
+          try {
+            isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash);
+          } catch (e) {
+            console.log("Error using bcrypt, may be plain text password:", e.message);
+            // Fallback to direct comparison if bcrypt fails (only temporary)
             isPasswordValid = credentials.password === user.password_hash;
           }
           
           if (!isPasswordValid) {
+            console.log("Password is invalid");
             return null;
           }
           
-          // Return the user object with required fields
+          console.log("Authentication successful");
+          console.log("User role:", user.role);
+          
+          // This is what gets passed to your JWT
           return {
             id: user.id,
             name: user.name,
@@ -65,7 +71,9 @@ export const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // Initial sign-in: user object is available
       if (user) {
+        console.log("JWT callback - user data:", user);
         token.id = user.id;
         token.employeeId = user.employeeId;
         token.campaign = user.campaign;
@@ -74,7 +82,9 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log("Session callback - token data:", token);
       if (token) {
+        // Add custom properties to the session.user object
         session.user.id = token.id;
         session.user.employeeId = token.employeeId;
         session.user.campaign = token.campaign;
@@ -89,10 +99,8 @@ export const authOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET || 'your-fallback-secret-never-use-this-in-production',
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Enable debugging to see detailed logs
 };
 
 const handler = NextAuth(authOptions);

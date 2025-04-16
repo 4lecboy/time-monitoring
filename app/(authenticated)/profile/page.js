@@ -204,7 +204,7 @@ export default function ProfilePage() {
               )}
               
               <p className="text-gray-600">
-                Your password can be changed at any time for security reasons. We recommend using a strong, unique password that you don't use for other accounts.
+                Your password can be changed at any time for security reasons. We recommend using a strong, unique password that you don`&apos;`t use for other accounts.
               </p>
               <p className="mt-2 text-gray-600">
                 Last password change: <span className="font-medium">Never</span>

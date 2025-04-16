@@ -26,19 +26,6 @@ export async function GET(request) {
       [session.user.id, date]
     );
 
-    // If no timers exist yet, return zero stats
-    if (!timerData || timerData.length === 0) {
-      return NextResponse.json({
-        totalSeconds: 0,
-        workSeconds: 0,
-        auxSeconds: 0,
-        workPercent: 0,
-        auxPercent: 0,
-        currentActivity: null,
-        timerCount: 0
-      });
-    }
-
     // Calculate statistics
     let totalSeconds = 0;
     let workSeconds = 0;
