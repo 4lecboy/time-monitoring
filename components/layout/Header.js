@@ -8,20 +8,22 @@ export default function Header() {
   const { data: session } = useSession();
   const [currentTime, setCurrentTime] = useState('');
   
-  // Update time every second with the CURRENT date (not 2025)
+  // Fix the date display issue - force current date
   useEffect(() => {
     const updateTime = () => {
+      // Create a fresh Date object from the current timestamp
       const now = new Date();
       
-      // Manual formatting to avoid any library issues
-      const year = now.getUTCFullYear();
-      const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(now.getUTCDate()).padStart(2, '0');
-      const hours = String(now.getUTCHours()).padStart(2, '0');
-      const minutes = String(now.getUTCMinutes()).padStart(2, '0');
-      const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+      // Format manually using the built-in JavaScript Date methods
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
       
-      setCurrentTime(`${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
+      const formatted = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      setCurrentTime(formatted);
     };
     
     updateTime(); // Initial call
@@ -41,7 +43,6 @@ export default function Header() {
           {/* Date and Time Display */}
           <div className="text-sm text-gray-600 border-r pr-6">
             <div className="font-semibold">Current Date and Time</div>
-            <div>(UTC - YYYY-MM-DD HH:MM:SS formatted)</div>
             <div className="font-mono">{currentTime}</div>
           </div>
           

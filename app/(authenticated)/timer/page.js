@@ -10,7 +10,6 @@ export default function TimerPage() {
   const [activities, setActivities] = useState([]);
   const [activeTimer, setActiveTimer] = useState(null);
   const [timers, setTimers] = useState({});
-  const [syncStatus, setSyncStatus] = useState('');
   
   // Function to format seconds as HH:MM:SS
   const formatTime = (seconds) => {
@@ -188,11 +187,6 @@ export default function TimerPage() {
             </span>
           </div>
         </div>
-        {syncStatus && (
-          <div className="mt-2 py-1 px-3 bg-blue-50 text-blue-700 text-sm rounded-md inline-block">
-            {syncStatus}
-          </div>
-        )}
       </div>
       
       <div className="grid grid-cols-1 gap-6">
