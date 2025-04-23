@@ -7,6 +7,8 @@ import Link from 'next/link';
 export default function Dashboard() {
   const { data: session } = useSession();
   const [activeTimers, setActiveTimers] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasDbError, setHasDbError] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +24,7 @@ export default function Dashboard() {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Load active timers
+  // Fetch active timers, campaigns, and activities
   useEffect(() => {
     const fetchData = async () => {
       if (!session?.user?.id) {
@@ -31,17 +33,36 @@ export default function Dashboard() {
       }
 
       try {
-        const response = await fetch('/api/dashboard/active-timers');
-        
-        if (response.ok) {
-          const data = await response.json();
-          setActiveTimers(data);
-          setHasDbError(false);
+        // Fetch active timers
+        const timersResponse = await fetch('/api/dashboard/active-timers');
+        if (timersResponse.ok) {
+          const timersData = await timersResponse.json();
+          setActiveTimers(timersData);
         } else {
-          throw new Error('API error');
+          throw new Error('Failed to fetch active timers');
         }
+
+        // Fetch campaigns
+        const campaignsResponse = await fetch('/api/campaigns');
+        if (campaignsResponse.ok) {
+          const campaignsData = await campaignsResponse.json();
+          setCampaigns(campaignsData);
+        } else {
+          throw new Error('Failed to fetch campaigns');
+        }
+
+        // Fetch activities
+        const activitiesResponse = await fetch('/api/activities');
+        if (activitiesResponse.ok) {
+          const activitiesData = await activitiesResponse.json();
+          setActivities(activitiesData);
+        } else {
+          throw new Error('Failed to fetch activities');
+        }
+
+        setHasDbError(false);
       } catch (error) {
-        console.error('Error fetching active timers:', error);
+        console.error('Error fetching data:', error);
         setHasDbError(true);
       } finally {
         setLoading(false);
@@ -49,7 +70,7 @@ export default function Dashboard() {
     };
 
     fetchData();
-    
+
     // Optional: polling interval for real-time updates
     const interval = setInterval(fetchData, 30000);
 
@@ -119,14 +140,12 @@ export default function Dashboard() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option value="">All Campaigns</option>
-              {/* Dynamically render unique campaign options */}
-              {[...new Set(activeTimers.map(timer => timer.campaign))].map((campaign) => (
-                <option key={campaign} value={campaign}>
-                  {campaign}
+              {campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.name}>
+                  {campaign.name}
                 </option>
               ))}
             </select>
-            
           </div>
 
           {/* Filter by Activity */}
@@ -141,10 +160,9 @@ export default function Dashboard() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
               <option value="">All Activities</option>
-              {/* Dynamically render unique activity options */}
-              {[...new Set(activeTimers.map(timer => timer.activityName))].map((activity) => (
-                <option key={activity} value={activity}>
-                  {activity}
+              {activities.map((activity) => (
+                <option key={activity.id} value={activity.name}>
+                  {activity.name}
                 </option>
               ))}
             </select>
