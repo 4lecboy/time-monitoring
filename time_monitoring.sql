@@ -102,3 +102,46 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+-- Create activities table
+CREATE TABLE `activities` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `type` enum('work','auxiliary') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Create timers table
+CREATE TABLE `timers` (
+  `id` varchar(36) NOT NULL,
+  `user_id` varchar(36) NOT NULL,
+  `activity_id` varchar(36) NOT NULL,
+  `date` date NOT NULL,
+  `accumulated_seconds` int(11) NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '0',
+  `start_time` datetime DEFAULT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `activity_id` (`activity_id`),
+  KEY `date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Insert sample activities
+INSERT INTO `activities` (`id`, `name`, `type`) VALUES
+(UUID(), 'Voice', 'work'),
+(UUID(), 'Email', 'work'),
+(UUID(), 'Data', 'work'),
+(UUID(), 'Chat', 'work'),
+(UUID(), 'Support', 'work'),
+(UUID(), 'Break 1', 'auxiliary'),
+(UUID(), 'Lunch', 'auxiliary'),
+(UUID(), 'Break 2', 'auxiliary'),
+(UUID(), 'Rest Room', 'auxiliary'),
+(UUID(), 'Coaching', 'auxiliary'),
+(UUID(), 'Training', 'auxiliary'),
+(UUID(), 'Meeting', 'auxiliary'),
+(UUID(), 'Technical', 'auxiliary');

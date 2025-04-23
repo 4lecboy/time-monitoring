@@ -9,7 +9,9 @@ export default function Dashboard() {
   const [activeTimers, setActiveTimers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasDbError, setHasDbError] = useState(false);
-  const [userActivity, setUserActivity] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [campaignFilter, setCampaignFilter] = useState('');
+  const [activityFilter, setActivityFilter] = useState('');
 
   // Format time as HH:MM:SS
   const formatTime = (seconds) => {
@@ -20,7 +22,7 @@ export default function Dashboard() {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Load active timers from localStorage when no database is available
+  // Load active timers
   useEffect(() => {
     const fetchData = async () => {
       if (!session?.user?.id) {
@@ -29,7 +31,6 @@ export default function Dashboard() {
       }
 
       try {
-        // Try to fetch from API first
         const response = await fetch('/api/dashboard/active-timers');
         
         if (response.ok) {
@@ -42,49 +43,6 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error fetching active timers:', error);
         setHasDbError(true);
-        
-        // Fallback to localStorage for current user's activity
-        const storedTimers = localStorage.getItem(`timers_${session.user.id}`);
-        const activeTimerId = localStorage.getItem(`activeTimer_${session.user.id}`);
-        
-        if (storedTimers && activeTimerId && activeTimerId !== 'null') {
-          const timers = JSON.parse(storedTimers);
-          
-          // Define activity name and type based on ID
-          const getActivityInfo = (id) => {
-            const activityMap = {
-              voice: { name: 'Voice', type: 'work' },
-              email: { name: 'Email', type: 'work' },
-              data: { name: 'Data', type: 'work' },
-              chat: { name: 'Chat', type: 'work' },
-              support: { name: 'Support', type: 'work' },
-              break1: { name: 'Break 1', type: 'auxiliary' },
-              lunch: { name: 'Lunch', type: 'auxiliary' },
-              break2: { name: 'Break 2', type: 'auxiliary' },
-              restroom: { name: 'Rest Room', type: 'auxiliary' },
-              coaching: { name: 'Coaching', type: 'auxiliary' },
-              training: { name: 'Training', type: 'auxiliary' },
-              meeting: { name: 'Meeting', type: 'auxiliary' },
-              technical: { name: 'Technical', type: 'auxiliary' },
-            };
-            
-            return activityMap[id] || { name: 'Unknown', type: 'work' };
-          };
-          
-          const activityInfo = getActivityInfo(activeTimerId);
-          
-          // Set user's active timer
-          if (timers[activeTimerId]) {
-            setUserActivity({
-              userId: session.user.id,
-              userName: session.user.name,
-              activityId: activeTimerId,
-              activityName: activityInfo.name,
-              activityType: activityInfo.type,
-              seconds: timers[activeTimerId].seconds || 0
-            });
-          }
-        }
       } finally {
         setLoading(false);
       }
@@ -92,22 +50,28 @@ export default function Dashboard() {
 
     fetchData();
     
-    // Set up polling interval if needed
+    // Optional: polling interval for real-time updates
     const interval = setInterval(fetchData, 30000);
-    
+
     return () => clearInterval(interval);
   }, [session?.user?.id]);
 
-  // Check if current user has an active timer from API data
-  useEffect(() => {
-    if (session?.user?.id && activeTimers.length > 0 && !hasDbError) {
-      const userTimer = activeTimers.find(timer => timer.userId === session.user.id);
-      setUserActivity(userTimer || null);
-    }
-  }, [session?.user?.id, activeTimers, hasDbError]);
+  // Filter and search logic
+  const filteredTimers = activeTimers.filter((timer) => {
+    const matchesSearch = searchQuery
+      ? timer.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        timer.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+
+    const matchesCampaign = campaignFilter ? timer.campaign === campaignFilter : true;
+    const matchesActivity = activityFilter ? timer.activityName === activityFilter : true;
+
+    return matchesSearch && matchesCampaign && matchesActivity;
+  });
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center">
           <div>
@@ -124,137 +88,155 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Current User's Activity */}
+      {/* Search and Filter Section */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-bold mb-4">Your Current Activity</h3>
-        
-        {userActivity ? (
-          <div className="flex items-center justify-between bg-blue-50 p-4 rounded-lg">
-            <div>
-              <p className="text-lg font-semibold">{userActivity.activityName}</p>
-              <p className="text-sm text-gray-600">{userActivity.activityType === 'work' ? 'Work Task' : 'Auxiliary Activity'}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-mono">{formatTime(userActivity.seconds)}</p>
-              <Link 
-                href="/timer"
-                className="text-blue-600 hover:underline text-sm"
-              >
-                Manage Timer →
-              </Link>
-            </div>
+        <h3 className="text-lg font-bold mb-4">Search and Filter</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search by Name or Ashima ID */}
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+              Search (Name or Ashima ID)
+            </label>
+            <input
+              type="text"
+              id="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Enter name or ID"
+            />
           </div>
-        ) : (
-          <div className="bg-gray-50 p-4 rounded-lg text-center">
-            <p className="text-gray-500 mb-3">No active timer</p>
-            <Link 
-              href="/timer"
-              className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+
+          {/* Filter by Campaign */}
+          <div>
+            <label htmlFor="campaignFilter" className="block text-sm font-medium text-gray-700">
+              Filter by Campaign
+            </label>
+            <select
+              id="campaignFilter"
+              value={campaignFilter}
+              onChange={(e) => setCampaignFilter(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             >
-              Start Timer
-            </Link>
+              <option value="">All Campaigns</option>
+              {/* Dynamically render unique campaign options */}
+              {[...new Set(activeTimers.map(timer => timer.campaign))].map((campaign) => (
+                <option key={campaign} value={campaign}>
+                  {campaign}
+                </option>
+              ))}
+            </select>
+            
           </div>
-        )}
-      </div>
-      
-      {/* All Active Users (Admin/PDD only) */}
-      {['admin', 'pdd'].includes(session?.user?.role) && !hasDbError && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="p-6 bg-indigo-50 border-b border-indigo-100">
-            <h3 className="text-xl font-bold text-indigo-800">Real-Time Activity Monitor</h3>
-            <p className="text-indigo-600 text-sm mt-1">
-              All currently active users
-            </p>
-          </div>
-          
-          <div className="p-6">
-            {loading ? (
-              <div className="flex justify-center p-6">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-              </div>
-            ) : activeTimers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employee
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Campaign
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Activity
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {activeTimers.map((timer) => (
-                      <tr key={timer.timerId || timer.userId}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{timer.userName}</div>
-                              <div className="text-sm text-gray-500">{timer.employeeId}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{timer.campaign}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{timer.activityName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            timer.activityType === 'work' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {timer.activityType}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
-                          {formatTime(timer.seconds)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-10 text-gray-500">
-                No active timers currently
-              </div>
-            )}
+
+          {/* Filter by Activity */}
+          <div>
+            <label htmlFor="activityFilter" className="block text-sm font-medium text-gray-700">
+              Filter by Activity
+            </label>
+            <select
+              id="activityFilter"
+              value={activityFilter}
+              onChange={(e) => setActivityFilter(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="">All Activities</option>
+              {/* Dynamically render unique activity options */}
+              {[...new Set(activeTimers.map(timer => timer.activityName))].map((activity) => (
+                <option key={activity} value={activity}>
+                  {activity}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Active Timers Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="p-6 bg-indigo-50 border-b border-indigo-100">
+          <h3 className="text-xl font-bold text-indigo-800">Real-Time Activity Monitor</h3>
+          <p className="text-indigo-600 text-sm mt-1">
+            View and manage all active timers
+          </p>
+        </div>
+        
+        <div className="p-6">
+          {loading ? (
+            <div className="flex justify-center p-6">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : filteredTimers.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Campaign
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Activity
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredTimers.map((timer) => (
+                    <tr key={timer.timerId || timer.userId}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{timer.userName}</div>
+                            <div className="text-sm text-gray-500">{timer.employeeId}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{timer.campaign}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{timer.activityName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          timer.activityType === 'work' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {timer.activityType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">
+                        {formatTime(timer.seconds)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-500">
+              No results found
+            </div>
+          )}
+        </div>
+      </div>
       
-      {/* Show this only for admin/pdd when there's a database error */}
-      {['admin', 'pdd'].includes(session?.user?.role) && hasDbError && (
+      {/* Display database error if applicable */}
+      {hasDbError && (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="p-6 bg-yellow-50 border-l-4 border-yellow-400">
-            <h3 className="text-xl font-bold text-yellow-800">Database Setup Required</h3>
+            <h3 className="text-xl font-bold text-yellow-800">Database Error</h3>
             <p className="mt-2">
-              The database tables needed for the activity monitor are not yet set up. 
-              Please run the SQL scripts provided to create the necessary tables.
-            </p>
-            <div className="mt-4">
-              <p className="font-semibold">Required tables:</p>
-              <ul className="list-disc list-inside ml-4 mt-2 text-gray-700">
-                <li>activities - Stores all available work and auxiliary activities</li>
-                <li>timers - Tracks user activity timing information</li>
-              </ul>
-            </div>
-            <p className="mt-4 text-sm text-gray-600">
-              In the meantime, basic timer functionality will still work using browser localStorage.
+              There was an issue fetching data from the database. Please contact the administrator.
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ export default function TimerPage() {
   const [activities, setActivities] = useState([]);
   const [activeTimer, setActiveTimer] = useState(null);
   const [timers, setTimers] = useState({});
+  const [syncStatus, setSyncStatus] = useState('');
   
   // Function to format seconds as HH:MM:SS
   const formatTime = (seconds) => {

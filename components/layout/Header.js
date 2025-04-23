@@ -3,11 +3,23 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const { data: session } = useSession();
   const [currentTime, setCurrentTime] = useState('');
-  
+  const router = useRouter();
+
+  // Handle redirection based on user role
+  const handleRedirect = () => {
+    const userRole = session?.user?.role || 'agent'; // Default to agent role if undefined
+    if (userRole === 'agent') {
+      router.push('/timer'); // Redirect agents to /timer
+    } else {
+      router.push('/dashboard'); // Redirect admin and pdd to /dashboard
+    }
+  };
+
   // Fix the date display issue - force current date
   useEffect(() => {
     const updateTime = () => {
@@ -35,9 +47,12 @@ export default function Header() {
   return (
     <header className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-        <Link href="/dashboard">
-          <h1 className="text-2xl font-bold text-gray-900 cursor-pointer">Time Monitoring System</h1>
-        </Link>
+        {/* Dynamically redirect on logo click */}
+        <div onClick={handleRedirect} className="cursor-pointer">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Time Monitoring System
+          </h1>
+        </div>
         
         <div className="flex items-center space-x-6">
           {/* Date and Time Display */}

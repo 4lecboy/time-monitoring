@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 export default function ProfilePage() {
@@ -77,8 +78,18 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-4">User Profile</h2>
-        <p>View your account information and change your password.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-4">User Profile</h2>
+            <p>View your account information and change your password.</p>
+          </div>
+        <Link 
+            href="/timer"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Activity Timer
+          </Link>
+          </div>
       </div>
       
       {/* User Information Section - Read Only */}
