@@ -9,19 +9,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [debugInfo, setDebugInfo] = useState(null);
 
   const router = useRouter();
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Debug info:', debugInfo);
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setDebugInfo(null);
 
     try {
       console.log('Signing in with:', { employeeId, password: '***' });
@@ -37,8 +31,18 @@ export default function Login() {
       if (result?.error) {
         setError(`Authentication failed: ${result.error}`);
       } else {
-        // Redirect to dashboard on successful login
-        router.push('/dashboard');
+        // Fetch session to check user role
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+
+        console.log('Session data:', sessionData);
+
+        // Redirect based on role
+        if (sessionData?.user?.role === 'agent') {
+          router.push('/timer'); // Redirect agents to Time Monitoring
+        } else {
+          router.push('/dashboard'); // Redirect others to Dashboard
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -116,24 +120,6 @@ export default function Login() {
             </button>
           </div>
         </form>
-
-        {/* Debug section - only visible when there's debug info */}
-        {debugInfo && (
-          <div className="mt-4 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-40">
-            <h3 className="font-bold">Debug Info:</h3>
-            <p>DB Connection: {debugInfo.message || 'N/A'}</p>
-            <p>Users in DB: {debugInfo.count || 0}</p>
-            {debugInfo.users && (
-              <ul className="mt-2 list-disc pl-5">
-                {debugInfo.users.map((user) => (
-                  <li key={user.id}>
-                    {user.name} ({user.employee_id}) - {user.role}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
 
         <div className="mt-4 text-center text-sm text-gray-600">
           <p>Contact your administrator for login credentials.</p>

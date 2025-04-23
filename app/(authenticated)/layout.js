@@ -24,16 +24,19 @@ export default function AuthenticatedLayout({ children }) {
     );
   }
 
+  // Check user role
+  const userRole = session?.user?.role || 'agent'; // Default to 'agent' role if undefined
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <SideNav />
-      
+      {/* Render SideNav only for non-agent roles */}
+      {userRole !== 'agent' && <SideNav />}
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Use the new Header component */}
+        {/* Header */}
         <Header />
-        
+
+        {/* Main Content */}
         <main className="flex-1 overflow-auto px-4 py-6">
           <div className="max-w-7xl mx-auto">
             {children}
